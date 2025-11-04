@@ -107,7 +107,7 @@ pip install Pillow pystray psutil matplotlib
 
 1.  **Clone the repository:**
     ```bash
-    git clone https://github.com/your-username/XClient.git
+    git clone https://github.com/RaptorFugueu/XClient.git
     cd XClient
     ```
 2.  **Install the required packages:**
