@@ -138,12 +138,12 @@ An `.exe` file is provided for easy installation on Windows systems.
     *   XClient will start and its icon will appear in the system tray.
 
 2.  **Adding Applications**:
-    *   Click the `+ Ajouter une app` (Add an app) button.
+    *   Click the `+ Add an app` button.
     *   Fill in the application's name, path to its executable/URL, and optionally a custom icon.
-    *   Use the `🔍 Détecter` (Detect) button to automatically suggest a category.
+    *   Use the `🔍 Detect` button to automatically suggest a category.
 
 3.  **Organizing Applications**:
-    *   **Groups**: Use the sidebar to switch between groups. You can create new groups via the `Groupes` (Groups) manager.
+    *   **Groups**: Use the sidebar to switch between groups. You can create new groups via the `Groups` manager.
     *   **Drag & Drop**: Drag applications to reorder them within a group or to move them to a different group (by dragging over a group in the sidebar).
 
 4.  **Launching Applications**:
@@ -155,12 +155,9 @@ An `.exe` file is provided for easy installation on Windows systems.
     *   View detailed usage statistics, charts, and category breakdowns for different time periods.
 
 6.  **Managing Goals**:
-    *   From the `Stats` dashboard or the main window, click `📋 Objectifs` (Goals) to open the goals manager.
+    *   From the `Stats` dashboard or the main window, click `📋 Goals` to open the goals manager.
     *   Add new goals to set time limits or minimum usage targets for applications/categories.
     *   Monitor goal progress on the main dashboard and receive notifications.
-
-7.  **System Tray**:
-    *   XClient runs in the background. Right-click the system tray icon to access quick options like `Quitter` (Quit). Notifications will also appear from here.
 
 ---
 
