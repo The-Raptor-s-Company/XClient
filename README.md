@@ -14,7 +14,7 @@
 
 ---
 
-## 🎯 Overview
+## 🎯 Overview 
 
 **XClient** is a modern, elegant application launcher designed for Windows. It provides a centralized hub to organize and launch all your applications, scripts, URLs, and shortcuts with style. With its sleek dark-themed interface, automatic categorization, and intuitive drag-and-drop functionality, XClient makes application management effortless.
 
