@@ -1,0 +1,4 @@
+# XClient
+
+## 🎯 Overview
+This project provides an installer application for XClient, designed to simplify the setup process for users. Written in Python with a graphical user interface (GUI) built using `tkinter`, this installer downloads the main XClient application executable and its essential assets (icons, images) from a remote server. It creates a dedicated `.XClient` directory within the user's `APPDATA` folder, organizes downloaded files, and automatically generates a desktop shortcut for easy access to the installed XClient application. The installer also offers a choice between English and French for the XClient application download.
