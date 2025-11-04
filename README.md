@@ -123,7 +123,7 @@ pip install Pillow pystray psutil matplotlib
 
 An `.exe` file is provided for easy installation on Windows systems.
 
-1.  **Download the latest `XClient_Installer.exe`** from the [releases page](https://github.com/RaptorFugueu/XClient/releases). (Replace with actual link)
+1.  **Download the latest `XClient_Installer.exe`** from the [releases page](https://github.com/RaptorFugueu/XClient/releases).
 2.  **Run the installer:** Double-click the downloaded `.exe` file.
 3.  **Follow the on-screen instructions** to install XClient.
 4.  Once installed, you can launch XClient from your Start Menu or desktop shortcut.
