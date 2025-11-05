@@ -18,6 +18,8 @@
 
 **XClient** is a modern, elegant application launcher designed for Windows. It provides a centralized hub to organize and launch all your applications, scripts, URLs, and shortcuts with style. With its sleek dark-themed interface, automatic categorization, activity tracking, and intuitive drag-and-drop functionality, XClient makes application management effortless. Beyond just launching, it helps you manage your digital habits with powerful goal-setting and a built-in JSON manager for advanced configuration.
 
+You can use the creation tool to manage your application at this URL: https://xclient-mit.vercel.app
+
 ### Why XClient?
 
 - 🎨 **Beautiful UI**: Modern dark theme with rounded cards and smooth animations
