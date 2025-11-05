@@ -1,4 +1,4 @@
-import os
+import os 
 import requests
 import tkinter as tk
 from tkinter import ttk, messagebox, Toplevel, Checkbutton, IntVar
@@ -14,11 +14,13 @@ def create_xclient_folder():
     xclient_path = os.path.join(app_data, '.XClient')
     os.makedirs(xclient_path, exist_ok=True)
 
-
     update_folder = os.path.join(xclient_path, "update")
     os.makedirs(update_folder, exist_ok=True)
 
-    return xclient_path, update_folder
+    link_folder = os.path.join(xclient_path, "link")
+    os.makedirs(link_folder, exist_ok=True)
+
+    return xclient_path, update_folder, link_folder
 
 
 def download_file(url, save_path):
@@ -104,15 +106,12 @@ def create_shortcut(exe_path):
 
 def open_image_selection_popup(callback):
     popup = Toplevel(root)
-    popup.title("Select Images to Download")
+    popup.title("Select apps icons to Download")
     popup.geometry("300x350")
 
-    ttk.Label(popup, text="Select the images you want to download:").pack(pady=10)
+    ttk.Label(popup, text="Select the apps icons you want to download:").pack(pady=10)
 
-    image_files = [
-        'chrome.png', 'discord.png', 'spotify.png', 'vlc.png',
-        'vscode.png', 'steam.png', 'notepad.png', 'minecraft.png'
-    ]
+    image_files = []
 
     vars_dict = {}
     for img in image_files:
@@ -133,7 +132,7 @@ def on_start_download():
     image_choice = image_choice_var.get()
 
     def proceed(selected_images=None):
-        xclient_path, update_folder = create_xclient_folder()
+        xclient_path, update_folder, link_folder = create_xclient_folder()
         downloaded_files, installer_path = download_files(xclient_path, update_folder, language, image_choice, selected_images or [])
         if installer_path:
             create_shortcut(installer_path)
@@ -175,7 +174,7 @@ ttk.Combobox(frame_options, textvariable=language_var, values=["English", "Fran√
 
 
 image_choice_var = tk.StringVar(value="none")
-ttk.Label(frame_options, text="Download Images:").grid(row=1, column=0, padx=10)
+ttk.Label(frame_options, text="Download apps icons:").grid(row=1, column=0, padx=10)
 ttk.Combobox(
     frame_options,
     textvariable=image_choice_var,

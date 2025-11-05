@@ -1037,6 +1037,14 @@ class RoundedButton(tk.Canvas):
         if self.command is not None:
             self.command()
 
+def center_window(window):
+    window.update_idletasks()
+    width = window.winfo_width()
+    height = window.winfo_height()
+    x = (window.winfo_screenwidth() // 2) - (width // 2)
+    y = (window.winfo_screenheight() // 2) - (height // 2)
+    window.geometry(f"{width}x{height}+{x}+{y}")
+
 class XClientApp:
     def __init__(self, root):
         self.root = root
@@ -1046,25 +1054,36 @@ class XClientApp:
         self.root.resizable(False, False)
         
 
-        self.appdata_path = os.path.join(os.getenv('APPDATA'), '.XClient')
-        self.links_path = os.path.join(self.appdata_path, 'link')
-        
 
-        os.makedirs(self.appdata_path, exist_ok=True)
+        project_root = os.path.dirname(os.path.abspath(__file__))
+        self.links_path = os.path.join(project_root, 'link')
         os.makedirs(self.links_path, exist_ok=True)
-        
 
-        old_links_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'link')
-        if os.path.exists(old_links_path):
-            try:
-                for file in os.listdir(old_links_path):
-                    old_file = os.path.join(old_links_path, file)
-                    new_file = os.path.join(self.links_path, file)
-                    if not os.path.exists(new_file):
-                        shutil.copy2(old_file, new_file)
-                shutil.rmtree(old_links_path)
-            except Exception as e:
-                print(f"Erreur lors de la migration des liens : {e}")
+
+        try:
+            appdata_root = os.getenv('APPDATA')
+            if appdata_root:
+                appdata_link_folder = os.path.join(appdata_root, '.XClient', 'link')
+                if os.path.exists(appdata_link_folder):
+                    for f in os.listdir(appdata_link_folder):
+                        src = os.path.join(appdata_link_folder, f)
+                        dst = os.path.join(self.links_path, f)
+                        if os.path.isfile(src) and not os.path.exists(dst):
+                            shutil.copy2(src, dst)
+
+                    try:
+                        shutil.rmtree(appdata_link_folder)
+                    except Exception:
+                        pass
+
+                old_xclient = os.path.join(appdata_root, '.XClient')
+                if os.path.exists(old_xclient) and not os.listdir(old_xclient):
+                    try:
+                        os.rmdir(old_xclient)
+                    except Exception:
+                        pass
+        except Exception as e:
+            print(f"Erreur lors de la migration depuis AppData vers le dossier projet: {e}")
         
 
         self.root.bind("<Control-g>", lambda e: self.open_groups_manager())
@@ -1462,10 +1481,18 @@ class XClientApp:
     
     def open_settings_menu(self):
         settings_window = tk.Toplevel(self.root)
+        settings_window.transient(self.root)
+        settings_window.grab_set()
         self.setup_window(settings_window, "Paramètres")
-        settings_window.geometry("400x500")
+        settings_window.geometry("400x600")
         settings_window.resizable(False, False)
-
+        try:
+            settings_window.iconbitmap('icon/icon_resized.ico')
+        except:
+            pass
+        
+        settings_window.focus_set()
+        self.center_window(settings_window)
 
         header = tk.Label(settings_window, text="Paramètres", 
                          font=("Arial", 16, "bold"), fg="white", bg="#1e2124")
@@ -1477,9 +1504,12 @@ class XClientApp:
 
         def show_shortcuts():
             shortcuts_window = tk.Toplevel(settings_window)
+            shortcuts_window.transient(settings_window)
+            shortcuts_window.grab_set()
             self.setup_window(shortcuts_window, "Raccourcis clavier")
             shortcuts_window.geometry("400x300")
             shortcuts_window.resizable(False, False)
+            shortcuts_window.focus_set()
 
 
             tk.Label(shortcuts_window, text="Raccourcis clavier", 
@@ -1541,6 +1571,411 @@ class XClientApp:
 
         create_menu_button("🎮 Voir sur itch.io",
                          lambda: webbrowser.open("https://raptorfugueu.itch.io/xclient"))
+
+        separator = tk.Frame(buttons_frame, height=1, bg="#3a4250")
+        separator.pack(fill="x", pady=10, padx=20)
+
+        create_menu_button("⚙️ Configuration avancée",
+                         lambda: self.open_advanced_settings(settings_window))
+
+    def open_advanced_settings(self, parent_window):
+        advanced_window = tk.Toplevel(parent_window)
+        advanced_window.transient(parent_window)
+        advanced_window.grab_set()
+        advanced_window.title("Configuration avancée")
+        advanced_window.configure(bg="#1e2124")
+        advanced_window.geometry("400x300")
+        advanced_window.resizable(False, False)
+        try:
+            advanced_window.iconbitmap('icon/icon_resized.ico')
+        except:
+            pass
+
+        advanced_window.focus_set()
+        self.center_window(advanced_window)
+        
+        header = tk.Label(advanced_window, text="Configuration avancée",
+                         font=("Arial", 14, "bold"), fg="white", bg="#1e2124")
+        header.pack(pady=20)
+
+        desc = tk.Label(advanced_window, 
+                       text="Configuration avancée pour les utilisateurs expérimentés.\nUtilisez cette section avec précaution.",
+                       font=("Arial", 10), fg="#8b9099", bg="#1e2124",
+                       justify="center")
+        desc.pack(pady=(0, 20))
+
+        json_btn = tk.Button(advanced_window, text="🔧 Gestionnaire JSON",
+                           font=("Arial", 11), bg="#2e3440", fg="white",
+                           bd=0, relief="flat", activebackground="#3a4250",
+                           activeforeground="white", width=25, height=2,
+                           command=lambda: self.open_json_manager(advanced_window))
+        json_btn.pack(pady=10)
+        apply_hover_to_button(json_btn, "#2e3440")
+
+        close_btn = tk.Button(advanced_window, text="Fermer",
+                             font=("Arial", 11), bg="#4c566a", fg="white",
+                             bd=0, relief="flat", activebackground="#556075",
+                             activeforeground="white", width=15,
+                             command=advanced_window.destroy)
+        close_btn.pack(pady=20)
+        apply_hover_to_button(close_btn, "#4c566a")
+
+    def open_json_manager(self, parent_window):
+        json_window = tk.Toplevel(parent_window)
+        json_window.transient(parent_window)
+        json_window.grab_set()
+        json_window.title("Gestionnaire JSON")
+        json_window.configure(bg="#1e2124")
+        json_window.geometry("800x700")
+        json_window.resizable(False, False)
+        try:
+            json_window.iconbitmap('icon/icon_resized.ico')
+        except:
+            pass
+
+        json_window.focus_set()
+        self.center_window(json_window)
+
+
+        header_frame = tk.Frame(json_window, bg="#1e2124")
+        header_frame.pack(fill="x", padx=20, pady=10)
+        
+        header = tk.Label(header_frame, text="Gestionnaire de configuration JSON",
+                         font=("Arial", 14, "bold"), fg="white", bg="#1e2124")
+        header.pack(pady=5)
+        
+
+        notebook = ttk.Notebook(json_window)
+        notebook.pack(fill="both", expand=True, padx=20, pady=10)
+
+
+        style = ttk.Style()
+        style.configure("Custom.TNotebook", background="#1e2124", borderwidth=0)
+        style.configure("Custom.TNotebook.Tab", background="#2e3440", foreground="white",
+                       padding=[10, 5], font=("Arial", 10))
+        style.map("Custom.TNotebook.Tab",
+                 background=[("selected", "#3b4252")],
+                 foreground=[("selected", "white")])
+        notebook.configure(style="Custom.TNotebook")
+
+
+        import_export_frame = tk.Frame(notebook, bg="#1e2124")
+        import_export_frame.pack(fill="both", expand=True)
+        notebook.add(import_export_frame, text="Import / Export")
+
+
+        import_frame = tk.Frame(import_export_frame, bg="#1e2124", padx=20)
+        import_frame.pack(fill="x", pady=10)
+
+        import_label = tk.Label(import_frame, text="Importer une configuration",
+                              font=("Arial", 12, "bold"), fg="white", bg="#1e2124")
+        import_label.pack(anchor="w", pady=(0, 10))
+
+        def import_json_file():
+            try:
+                file_path = filedialog.askopenfilename(
+                    title="Sélectionner un fichier JSON",
+                    filetypes=[("Fichiers JSON", "*.json"), ("Tous les fichiers", "*.*")]
+                )
+                if not file_path:
+                    return
+                
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    config = json.load(f)
+                
+                self._apply_json_config(config)
+                messagebox.showinfo("Succès", "Configuration importée avec succès !")
+                
+            except json.JSONDecodeError:
+                messagebox.showerror("Erreur", "Le fichier n'est pas un JSON valide.")
+            except Exception as e:
+                messagebox.showerror("Erreur", f"Erreur lors de l'importation : {str(e)}")
+
+        import_file_btn = tk.Button(import_frame, text="📂 Importer depuis un fichier",
+                                  font=("Arial", 11), bg="#2e3440", fg="white",
+                                  bd=0, relief="flat", activebackground="#3a4250",
+                                  activeforeground="white", width=25,
+                                  command=import_json_file)
+        import_file_btn.pack(pady=5)
+        apply_hover_to_button(import_file_btn, "#2e3440")
+
+
+        text_frame = tk.Frame(json_window, bg="#1e2124", padx=20)
+        text_frame.pack(fill="both", expand=True, pady=10)
+
+        text_label = tk.Label(text_frame, text="Ou collez votre JSON ici :",
+                            font=("Arial", 10), fg="white", bg="#1e2124")
+        text_label.pack(anchor="w", pady=(0, 5))
+
+        json_text = tk.Text(text_frame, height=10, width=50, bg="#2e3440", fg="white",
+                          font=("Consolas", 10), bd=0)
+        json_text.pack(pady=(0, 10))
+
+        def import_json_text():
+            try:
+                json_str = json_text.get("1.0", "end-1c").strip()
+                if not json_str:
+                    messagebox.showerror("Erreur", "Veuillez entrer du texte JSON valide.")
+                    return
+                
+                config = json.loads(json_str)
+                self._apply_json_config(config)
+                messagebox.showinfo("Succès", "Configuration importée avec succès !")
+                
+            except json.JSONDecodeError:
+                messagebox.showerror("Erreur", "Le texte n'est pas un JSON valide.")
+            except Exception as e:
+                messagebox.showerror("Erreur", f"Erreur lors de l'importation : {str(e)}")
+
+        import_text_btn = tk.Button(text_frame, text="📝 Importer depuis le texte",
+                                  font=("Arial", 11), bg="#2e3440", fg="white",
+                                  bd=0, relief="flat", activebackground="#3a4250",
+                                  activeforeground="white", width=25,
+                                  command=import_json_text)
+        import_text_btn.pack()
+        apply_hover_to_button(import_text_btn, "#2e3440")
+
+
+        export_frame = tk.Frame(json_window, bg="#1e2124", padx=20)
+        export_frame.pack(fill="x", pady=20)
+
+        export_label = tk.Label(export_frame, text="Exporter la configuration",
+                              font=("Arial", 12, "bold"), fg="white", bg="#1e2124")
+        export_label.pack(anchor="w", pady=(0, 10))
+
+        def export_json_file():
+            try:
+                config = self._get_current_config()
+                
+                file_path = filedialog.asksaveasfilename(
+                    title="Enregistrer la configuration",
+                    defaultextension=".json",
+                    filetypes=[("Fichiers JSON", "*.json"), ("Tous les fichiers", "*.*")]
+                )
+                if not file_path:
+                    return
+                    
+                with open(file_path, 'w', encoding='utf-8') as f:
+                    json.dump(config, f, indent=2, ensure_ascii=False)
+                    
+                messagebox.showinfo("Succès", "Configuration exportée avec succès !")
+                
+            except Exception as e:
+                messagebox.showerror("Erreur", f"Erreur lors de l'exportation : {str(e)}")
+
+        def export_json_clipboard():
+            try:
+                config = self._get_current_config()
+                json_str = json.dumps(config, indent=2, ensure_ascii=False)
+                
+                self.root.clipboard_clear()
+                self.root.clipboard_append(json_str)
+                
+                messagebox.showinfo("Succès", "Configuration copiée dans le presse-papiers !")
+                
+            except Exception as e:
+                messagebox.showerror("Erreur", f"Erreur lors de la copie : {str(e)}")
+
+        export_file_btn = tk.Button(export_frame, text="💾 Exporter vers un fichier",
+                                  font=("Arial", 11), bg="#2e3440", fg="white",
+                                  bd=0, relief="flat", activebackground="#3a4250",
+                                  activeforeground="white", width=25,
+                                  command=export_json_file)
+        export_file_btn.pack(pady=5)
+        apply_hover_to_button(export_file_btn, "#2e3440")
+
+        export_clip_btn = tk.Button(export_frame, text="📋 Copier dans le presse-papiers",
+                                  font=("Arial", 11), bg="#2e3440", fg="white",
+                                  bd=0, relief="flat", activebackground="#3a4250",
+                                  activeforeground="white", width=25,
+                                  command=export_json_clipboard)
+        export_clip_btn.pack(pady=5)
+        apply_hover_to_button(export_clip_btn, "#2e3440")
+
+
+        edit_frame = tk.Frame(notebook, bg="#1e2124")
+        edit_frame.pack(fill="both", expand=True)
+        notebook.add(edit_frame, text="Modification Directe")
+
+
+        warning_frame = tk.Frame(edit_frame, bg="#2e3440", padx=20, pady=15)
+        warning_frame.pack(fill="x", padx=20, pady=(10, 20))
+
+        warning_icon = tk.Label(warning_frame, text="⚠️", 
+                              font=("Arial", 20), bg="#2e3440", fg="yellow")
+        warning_icon.pack(pady=(0, 5))
+
+        warning_text = tk.Label(warning_frame, text="ZONE DANGEREUSE",
+                              font=("Arial", 12, "bold"), fg="yellow", bg="#2e3440")
+        warning_text.pack()
+
+        warning_desc = tk.Label(warning_frame, 
+                              text="La modification directe des fichiers JSON peut rendre\n"
+                                   "l'application instable ou inutilisable si mal configurée.\n"
+                                   "Assurez-vous de faire une sauvegarde avant toute modification.",
+                              font=("Arial", 10), fg="white", bg="#2e3440", justify="center")
+        warning_desc.pack(pady=(5, 0))
+
+
+        select_frame = tk.Frame(edit_frame, bg="#1e2124", padx=20)
+        select_frame.pack(fill="x", pady=10)
+
+        select_label = tk.Label(select_frame, text="Sélectionner le fichier à modifier :",
+                              font=("Arial", 11, "bold"), fg="white", bg="#1e2124")
+        select_label.pack(anchor="w", pady=(0, 10))
+
+        def load_json_file(file_name):
+            try:
+                with open(file_name, 'r', encoding='utf-8') as f:
+                    content = json.load(f)
+                    edit_text.delete('1.0', tk.END)
+                    edit_text.insert('1.0', json.dumps(content, indent=2, ensure_ascii=False))
+            except Exception as e:
+                messagebox.showerror("Erreur", f"Erreur lors de la lecture du fichier : {str(e)}")
+
+        def save_json_file(file_name):
+            try:
+                content = edit_text.get('1.0', tk.END).strip()
+
+                json_content = json.loads(content)
+                
+
+                if file_name == "applications.json":
+                    used_orders = set()
+                    next_order = 1
+                    for app in json_content:
+                        if "order" in app:
+                            while app["order"] in used_orders:
+                                app["order"] = next_order
+                                next_order += 1
+                            used_orders.add(app["order"])
+                        else:
+                            while next_order in used_orders:
+                                next_order += 1
+                            app["order"] = next_order
+                            used_orders.add(next_order)
+                            next_order += 1
+                    content = json.dumps(json_content, indent=2, ensure_ascii=False)
+                
+                with open(file_name, 'w', encoding='utf-8') as f:
+                    f.write(content)
+                messagebox.showinfo("Succès", "Fichier sauvegardé avec succès !")
+                
+
+                if file_name == "goals_data.json":
+                    self.goals = json_content
+                
+            except json.JSONDecodeError:
+                messagebox.showerror("Erreur", "Le JSON n'est pas valide.")
+            except Exception as e:
+                messagebox.showerror("Erreur", f"Erreur lors de la sauvegarde : {str(e)}")
+
+        button_frame = tk.Frame(select_frame, bg="#1e2124")
+        button_frame.pack(fill="x")
+
+        json_files = [
+            ("📱 Applications", "applications.json"),
+            ("🎯 Objectifs", "goals_data.json")
+        ]
+
+        for label, filename in json_files:
+            btn = tk.Button(button_frame, text=label,
+                          font=("Arial", 11), bg="#2e3440", fg="white",
+                          bd=0, relief="flat", activebackground="#3a4250",
+                          activeforeground="white", width=20,
+                          command=lambda f=filename: load_json_file(f))
+            btn.pack(side="left", padx=5, pady=5)
+            apply_hover_to_button(btn, "#2e3440")
+
+
+        edit_label = tk.Label(edit_frame, text="Contenu du fichier :",
+                            font=("Arial", 11, "bold"), fg="white", bg="#1e2124")
+        edit_label.pack(anchor="w", padx=20, pady=(10, 5))
+
+        edit_text = tk.Text(edit_frame, height=15, bg="#2e3440", fg="white",
+                          font=("Consolas", 11), bd=0)
+        edit_text.pack(fill="both", expand=True, padx=20, pady=(0, 10))
+
+
+        save_frame = tk.Frame(edit_frame, bg="#1e2124")
+        save_frame.pack(fill="x", padx=20, pady=(0, 10))
+
+        for label, filename in json_files:
+            save_btn = tk.Button(save_frame, text=f"💾 Sauvegarder {label}",
+                               font=("Arial", 11), bg="#2e3440", fg="white",
+                               bd=0, relief="flat", activebackground="#3a4250",
+                               activeforeground="white", width=25,
+                               command=lambda f=filename: save_json_file(f))
+            save_btn.pack(side="left", padx=5)
+            apply_hover_to_button(save_btn, "#2e3440")
+
+
+        close_frame = tk.Frame(json_window, bg="#1e2124")
+        close_frame.pack(fill="x", pady=20)
+
+        close_btn = tk.Button(close_frame, text="Fermer",
+                            font=("Arial", 11), bg="#4c566a", fg="white",
+                            bd=0, relief="flat", activebackground="#556075",
+                            activeforeground="white", width=15,
+                            command=json_window.destroy)
+        close_btn.pack()
+        apply_hover_to_button(close_btn, "#4c566a")
+
+    def _get_current_config(self):
+        config = {
+            "applications": self._load_applications(),
+            "goals": self.goals
+        }
+        
+
+        try:
+            with open(self.activity_file, 'r') as f:
+                config["activity_data"] = json.load(f)
+        except:
+            config["activity_data"] = {}
+            
+        return config
+
+    def _apply_json_config(self, config):
+        data = ensure_data_schema(config)
+        
+
+        if isinstance(data, dict) and "applications" in data and "groups" in data:
+
+            self.groups = data["groups"]
+            
+
+            apps = data["applications"]
+            used_orders = set()
+            next_order = 1
+            
+            for app in apps:
+                if "order" in app:
+                    while app["order"] in used_orders:
+                        app["order"] = next_order
+                        next_order += 1
+                    used_orders.add(app["order"])
+                else:
+                    while next_order in used_orders:
+                        next_order += 1
+                    app["order"] = next_order
+                    used_orders.add(next_order)
+                    next_order += 1
+            
+            self.applications = apps
+            self.save_all()
+            
+
+            self._build_sidebar()
+            self.update_app_grid()
+        
+        if "goals" in config:
+            self.goals = config["goals"]
+            self._save_goals()
+        
+        if "activity_data" in config:
+            with open(self.activity_file, "w") as f:
+                json.dump(config["activity_data"], f, indent=2)
     
     def load_icon(self, icon_name, size=(20, 20)):
         
@@ -2700,6 +3135,71 @@ class XClientApp:
 
         buttons_frame.update()
 
+    def modify_app_order(self, index):
+        app = self.applications[index]
+        group_id = app.get("group_id", DEFAULT_GROUP_ID)
+        
+        dialog = tk.Toplevel(self.root)
+        dialog.geometry("400x250")
+        self.setup_window(dialog, "Modifier l'ordre")
+        
+        main_frame = tk.Frame(dialog, bg="#1e2124")
+        main_frame.pack(fill="both", expand=True, padx=20, pady=20)
+        
+        tk.Label(main_frame, text=f"Modifier l'ordre de", 
+                font=("Arial", 12, "bold"), fg="white", bg="#1e2124").pack(pady=5)
+        tk.Label(main_frame, text=app["name"],
+                font=("Arial", 10), fg="#4a90e2", bg="#1e2124").pack()
+        
+        # Liste des applications dans le même groupe
+        apps_in_group = sort_apps_for_group(self.applications, group_id)
+        current_order = app.get("order", 0)
+        
+        # Création du spinbox pour sélectionner l'ordre
+        order_frame = tk.Frame(main_frame, bg="#1e2124")
+        order_frame.pack(pady=20)
+        
+        tk.Label(order_frame, text="Position :", fg="white", bg="#1e2124").pack(side="left", padx=(0, 10))
+        order_var = tk.StringVar(value=str(current_order + 1))
+        order_spin = tk.Spinbox(order_frame, from_=1, to=len(apps_in_group), 
+                               textvariable=order_var, width=5,
+                               bg="#2e3440", fg="white", buttonbackground="#2e3440",
+                               relief="flat", highlightthickness=1,
+                               highlightbackground="#3a4250", insertbackground="white")
+        order_spin.pack(side="left")
+        
+        buttons_frame = tk.Frame(main_frame, bg="#1e2124")
+        buttons_frame.pack(side="bottom", pady=20)
+        
+        def apply_order():
+            try:
+                new_pos = int(order_var.get()) - 1
+                if 0 <= new_pos < len(apps_in_group):
+                    # Réorganise les ordres des applications du groupe
+                    old_pos = apps_in_group.index(app)
+                    apps_in_group.insert(new_pos, apps_in_group.pop(old_pos))
+                    
+                    # Met à jour les ordres
+                    for i, a in enumerate(apps_in_group):
+                        idx = self.applications.index(a)
+                        self.applications[idx]["order"] = i
+                    
+                    self.save_all()
+                    self.update_app_grid()
+                dialog.destroy()
+            except ValueError:
+                messagebox.showerror("Erreur", "Veuillez entrer un nombre valide")
+        
+        cancel_btn = RoundedButton(buttons_frame, width=140, height=32, cornerradius=8,
+                                 bg="#2e3440", fg="white", text="Annuler",
+                                 command=dialog.destroy)
+        cancel_btn.pack(side="left", padx=10)
+        
+        apply_btn = RoundedButton(buttons_frame, width=140, height=32, cornerradius=8,
+                                bg="#4a90e2", fg="white", text="Appliquer",
+                                command=apply_order)
+        apply_btn.pack(side="left", padx=10)
+
     def modify_application(self, index):
         app = self.applications[index]
 
@@ -3190,11 +3690,26 @@ class XClientApp:
                 icon_label.bind("<Double-Button-1>", lambda e, i=index: self.launch_app(i))
             name_label.bind("<Double-Button-1>", lambda e, i=index: self.launch_app(i))
 
+            # Menu contextuel pour l'application
+            app_menu = tk.Menu(self.root, tearoff=0, bg="#2e3440", fg="white", activebackground="#3a4250", activeforeground="white")
+            app_menu.add_command(label="Modifier l'ordre", command=lambda i=index: self.modify_app_order(i))
+            app_menu.add_command(label="Modifier l'application", command=lambda i=index: self.modify_application(i))
+            app_menu.add_separator()
+            app_menu.add_command(label="Supprimer", command=lambda i=index: self.delete_application(i), foreground="#ff4444")
+
+            def show_app_menu(e, i=index):
+                self.select_application(i)
+                app_menu.tk_popup(e.x_root, e.y_root)
+
             app_frame.bind("<Button-1>", lambda e, i=index: self.select_application(i))
             content_frame.bind("<Button-1>", lambda e, i=index: self.select_application(i))
+            app_frame.bind("<Button-3>", show_app_menu)
+            content_frame.bind("<Button-3>", show_app_menu)
             if icon_photo:
                 icon_label.bind("<Button-1>", lambda e, i=index: self.select_application(i))
+                icon_label.bind("<Button-3>", show_app_menu)
             name_label.bind("<Button-1>", lambda e, i=index: self.select_application(i))
+            name_label.bind("<Button-3>", show_app_menu)
 
 
             app_frame.bind("<ButtonPress-1>", lambda e, i=index: self._on_drag_start(i))
@@ -3566,6 +4081,26 @@ class XClientApp:
             item.bind("<Enter>", _hover_in)
             item.bind("<Leave>", _hover_out)
 
+            # Menu contextuel pour le groupe
+            group_menu = tk.Menu(self.root, tearoff=0, bg="#2e3440", fg="white", activebackground="#3a4250", activeforeground="white")
+            if g["id"] != DEFAULT_GROUP_ID:  # Ne pas montrer les options pour le groupe par défaut
+                group_menu.add_command(label="Supprimer", command=lambda gid=g["id"]: self._delete_group(gid), foreground="#ff4444")
+            
+            def show_group_menu(e, gid=g["id"]):
+                if gid != DEFAULT_GROUP_ID:  # N'affiche le menu que pour les groupes non-défaut
+                    # Sélectionne le groupe et met à jour l'affichage
+                    self.active_group_filter = gid
+                    self.update_app_grid()
+                    self._highlight_active_group()
+                    # Affiche le menu contextuel
+                    group_menu.tk_popup(e.x_root, e.y_root)
+                    
+            item.bind("<Button-3>", show_group_menu)
+            if icon_img:
+                icon_lbl.bind("<Button-3>", show_group_menu)
+            # Ajouter le binding au label du nom
+            name_lbl.bind("<Button-3>", show_group_menu)
+
 
             item.group_id = g["id"]
 
@@ -3714,6 +4249,265 @@ class XClientApp:
         except Exception:
             pass
         self.update_app_grid()
+
+    def modify_group_order(self, group_id):
+        if group_id == DEFAULT_GROUP_ID:
+            return
+            
+        dialog = tk.Toplevel(self.root)
+        dialog.geometry("400x250")
+        self.setup_window(dialog, "Modifier l'ordre")
+        
+        main_frame = tk.Frame(dialog, bg="#1e2124")
+        main_frame.pack(fill="both", expand=True, padx=20, pady=20)
+        
+        tk.Label(main_frame, text=f"Modifier l'ordre de", 
+                font=("Arial", 12, "bold"), fg="white", bg="#1e2124").pack(pady=5)
+        tk.Label(main_frame, text=self.groups[group_id]["name"],
+                font=("Arial", 10), fg="#4a90e2", bg="#1e2124").pack()
+        
+        # Obtenir la liste des groupes triés (sauf le groupe par défaut)
+        ordered_groups = sort_groups_for_sidebar(self.groups)
+        groups_list = [g for g in ordered_groups if g["id"] != DEFAULT_GROUP_ID]
+        current_pos = next(i for i, g in enumerate(groups_list) if g["id"] == group_id)
+        
+        # Frame pour le spinbox
+        order_frame = tk.Frame(main_frame, bg="#1e2124")
+        order_frame.pack(pady=20)
+        
+        tk.Label(order_frame, text="Position :", fg="white", bg="#1e2124").pack(side="left", padx=(0, 10))
+        order_var = tk.StringVar(value=str(current_pos + 1))
+        order_spin = tk.Spinbox(order_frame, from_=1, to=len(groups_list), 
+                               textvariable=order_var, width=5,
+                               bg="#2e3440", fg="white", buttonbackground="#2e3440",
+                               relief="flat", highlightthickness=1,
+                               highlightbackground="#3a4250", insertbackground="white")
+        order_spin.pack(side="left")
+        
+        buttons_frame = tk.Frame(main_frame, bg="#1e2124")
+        buttons_frame.pack(side="bottom", pady=20)
+        
+        def apply_order():
+            try:
+                new_pos = int(order_var.get()) - 1
+                if 0 <= new_pos < len(groups_list):
+                    # Déplacer le groupe à la nouvelle position
+                    groups_list.insert(new_pos, groups_list.pop(current_pos))
+                    
+                    # Mettre à jour les ordres
+                    self.groups[DEFAULT_GROUP_ID]["order"] = 0
+                    for i, g in enumerate(groups_list, start=1):
+                        self.groups[g["id"]]["order"] = i
+                    
+                    self.save_all()
+                    self._build_sidebar()
+                dialog.destroy()
+            except ValueError:
+                messagebox.showerror("Erreur", "Veuillez entrer un nombre valide")
+        
+        cancel_btn = RoundedButton(buttons_frame, width=140, height=32, cornerradius=8,
+                                 bg="#2e3440", fg="white", text="Annuler",
+                                 command=dialog.destroy)
+        cancel_btn.pack(side="left", padx=10)
+        
+        apply_btn = RoundedButton(buttons_frame, width=140, height=32, cornerradius=8,
+                                bg="#4a90e2", fg="white", text="Appliquer",
+                                command=apply_order)
+        apply_btn.pack(side="left", padx=10)
+
+    def _update_group_contextual(self, group_id):
+        if group_id == DEFAULT_GROUP_ID:
+            return
+            
+        dialog = tk.Toplevel(self.root)
+        dialog.geometry("600x300")
+        self.setup_window(dialog, "Modifier le groupe")
+        
+        main_frame = tk.Frame(dialog, bg="#1e2124")
+        main_frame.pack(fill="both", expand=True, padx=20, pady=20)
+        
+        tk.Label(main_frame, text="Modifier le groupe", 
+                font=("Arial", 12, "bold"), fg="white", bg="#1e2124").pack(pady=5)
+                
+        # Frame pour le nom
+        name_frame = tk.Frame(main_frame, bg="#1e2124")
+        name_frame.pack(fill="x", pady=10)
+        
+        tk.Label(name_frame, text="Nom du groupe", bg="#1e2124", fg="white", 
+                font=("Arial", 10, "bold")).pack(anchor="w", pady=(0, 8))
+        
+        name_entry = tk.Entry(name_frame, font=("Arial", 11),
+                            bg="#2e3440", fg="white", relief="flat",
+                            insertbackground="white", width=30,
+                            highlightthickness=1, highlightbackground="#3a4250")
+        name_entry.insert(0, self.groups[group_id]["name"])
+        name_entry.pack(ipady=5)
+        
+        # Frame pour l'icône
+        icon_frame = tk.Frame(main_frame, bg="#1e2124")
+        icon_frame.pack(fill="x", pady=10)
+        
+        tk.Label(icon_frame, text="Icône (optionnel)", bg="#1e2124", fg="white",
+                font=("Arial", 10, "bold")).pack(anchor="w", pady=(0, 8))
+        
+        icon_entry = tk.Entry(icon_frame, font=("Arial", 11),
+                            bg="#2e3440", fg="white", relief="flat",
+                            insertbackground="white",
+                            highlightthickness=1, highlightbackground="#3a4250")
+        icon_entry.insert(0, self.groups[group_id].get("icon", ""))
+        icon_entry.pack(fill="x", ipady=5)
+        
+        # Boutons pour l'icône
+        icon_buttons = tk.Frame(icon_frame, bg="#1e2124")
+        icon_buttons.pack(anchor="w", pady=(10, 0))
+        
+        browse_icon_btn = RoundedButton(icon_buttons, width=150, height=32, cornerradius=8,
+                                      bg="#2e3440", fg="white", text="📁 Parcourir",
+                                      command=lambda: icon_entry.delete(0, tk.END) or icon_entry.insert(0, filedialog.askopenfilename(
+                                          filetypes=[("Images", "*.png *.jpg *.jpeg *.gif *.ico")])))
+        browse_icon_btn.pack(side="left", padx=(0, 10))
+        
+        xclient_icon_btn = RoundedButton(icon_buttons, width=180, height=32, cornerradius=8,
+                                       bg="#4a90e2", fg="white", text="🎨 Icônes XClient",
+                                       command=lambda: self.open_icon_picker(icon_entry))
+        xclient_icon_btn.pack(side="left")
+        
+        # Boutons d'action
+        buttons_frame = tk.Frame(main_frame, bg="#1e2124")
+        buttons_frame.pack(side="bottom", pady=20)
+        
+        def apply_changes():
+            new_name = name_entry.get().strip()
+            new_icon = icon_entry.get().strip()
+            
+            if not new_name:
+                messagebox.showwarning("Erreur", "Le nom du groupe ne peut pas être vide")
+                return
+                
+            self.groups[group_id]["name"] = new_name
+            self.groups[group_id]["icon"] = new_icon if new_icon else None
+            
+            self.save_all()
+            self._build_sidebar()
+            dialog.destroy()
+        
+        cancel_btn = RoundedButton(buttons_frame, width=140, height=32, cornerradius=8,
+                                 bg="#2e3440", fg="white", text="Annuler",
+                                 command=dialog.destroy)
+        cancel_btn.pack(side="left", padx=10)
+        
+        apply_btn = RoundedButton(buttons_frame, width=140, height=32, cornerradius=8,
+                                bg="#4a90e2", fg="white", text="Appliquer",
+                                command=apply_changes)
+        apply_btn.pack(side="left", padx=10)
+
+    def _delete_group(self, group_id):
+        """Version du menu contextuel de la suppression de groupe"""
+        if group_id == DEFAULT_GROUP_ID:
+            messagebox.showinfo("Info", "Le groupe par défaut ne peut pas être supprimé.")
+            return
+        
+        apps_count = len([a for a in self.applications if a.get("group_id", DEFAULT_GROUP_ID) == group_id])
+        
+        dialog = tk.Toplevel(self.root)
+        dialog.geometry("550x380")
+        self.setup_window(dialog, "Supprimer le groupe")
+        
+        result = {"confirmed": False, "dest_id": DEFAULT_GROUP_ID}
+        
+        header_frame = tk.Frame(dialog, bg="#1e2124")
+        header_frame.pack(fill="x", padx=30, pady=(25, 15))
+        
+        icon_label = tk.Label(header_frame, text="🗑️", font=("Arial", 32),
+                             bg="#1e2124", fg="#ff4444")
+        icon_label.pack(side="left", padx=(0, 15))
+        
+        title_label = tk.Label(header_frame, 
+                              text=f"Supprimer le groupe\n\"{self.groups[group_id]['name']}\"",
+                              bg="#1e2124", fg="white", font=("Arial", 13, "bold"),
+                              justify="left")
+        title_label.pack(side="left", anchor="w")
+        
+        info_frame = tk.Frame(dialog, bg="#2e3440")
+        info_frame.pack(fill="x", padx=30, pady=(0, 20))
+        
+        if apps_count > 0:
+            info_text = f"Ce groupe contient {apps_count} application(s).\nVeuillez choisir où les déplacer avant de supprimer le groupe."
+            info_icon = "📦"
+        else:
+            info_text = "Ce groupe est vide.\nVous pouvez le supprimer sans déplacer d'applications."
+            info_icon = "✓"
+        
+        info_header = tk.Frame(info_frame, bg="#2e3440")
+        info_header.pack(fill="x", padx=15, pady=(12, 8))
+        
+        tk.Label(info_header, text=info_icon, bg="#2e3440", fg="white",
+                font=("Arial", 16)).pack(side="left", padx=(0, 10))
+        
+        tk.Label(info_header, text=info_text, bg="#2e3440", fg="white",
+                font=("Arial", 10), justify="left").pack(side="left", anchor="w")
+
+        if apps_count > 0:
+            dest_frame = tk.Frame(dialog, bg="#1e2124")
+            dest_frame.pack(fill="x", padx=30, pady=(10, 20))
+            
+            tk.Label(dest_frame, text="Groupe de destination", bg="#1e2124", fg="white",
+                    font=("Arial", 10, "bold")).pack(anchor="w", pady=(0, 8))
+            
+            available_groups = [g["name"] for g in self.groups.values() if g["id"] != group_id]
+            
+            dest_var = tk.StringVar(value=self.groups[DEFAULT_GROUP_ID]["name"])
+            dest_combo = ttk.Combobox(dest_frame, textvariable=dest_var, state="readonly",
+                                     values=available_groups, font=("Arial", 11), height=10)
+            dest_combo.pack(fill="x", ipady=8)
+            
+            def update_dest(*args):
+                dest_name = dest_var.get()
+                result["dest_id"] = self._group_id_by_name(dest_name) or DEFAULT_GROUP_ID
+            
+            dest_var.trace('w', update_dest)
+            update_dest()
+        
+        buttons_frame = tk.Frame(dialog, bg="#1e2124")
+        buttons_frame.pack(fill="x", padx=30, pady=(10, 25))
+        
+        def on_cancel():
+            result["confirmed"] = False
+            dialog.destroy()
+        
+        def on_confirm():
+            result["confirmed"] = True
+            dialog.destroy()
+        
+        cancel_btn = RoundedButton(buttons_frame, width=200, height=38, cornerradius=8,
+                                   bg="#2e3440", fg="white", text="Annuler",
+                                   command=on_cancel)
+        cancel_btn.pack(side="left", padx=(0, 10))
+        
+        confirm_btn = RoundedButton(buttons_frame, width=200, height=38, cornerradius=8,
+                                    bg="#ff4444", fg="white", text="Supprimer le groupe",
+                                    command=on_confirm)
+        confirm_btn.pack(side="right")
+        
+        dialog.wait_window()
+        
+        if result["confirmed"]:
+            dest_id = result["dest_id"]
+            
+            # Déplacer les applications du groupe supprimé
+            for app in self.applications:
+                if app.get("group_id", DEFAULT_GROUP_ID) == group_id:
+                    app["group_id"] = dest_id
+            
+            # Supprimer le groupe
+            del self.groups[group_id]
+            if self.active_group_filter == group_id:
+                self.active_group_filter = DEFAULT_GROUP_ID
+            
+            self.save_all()
+            self._refresh_groups_listbox()
+            self._build_sidebar()
+            self.update_app_grid()
 
     def _delete_selected_group(self):
         sel = self.groups_listbox.curselection()
